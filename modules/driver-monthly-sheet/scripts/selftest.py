@@ -180,14 +180,41 @@ def run_selftest():
         z = rr["data"].get("张司机", {})
         checks.append(("报销按月过滤且聚合正确", z.get("count") == 2 and float(z.get("amount", 0)) == 89.83, z))
 
-        # --- check 4: 幂等（再跑一次，fill 不重建）---
+        # --- check 4: 幂等（再跑一次，已存在 sheet 去重后无新增→零改动）---
         before = _read_parts(zhang)[_sheet_part_of(zhang, "2026年11月")]
         res2 = pipeline.run(cfg, 2026, 11, tmpdir)
         after = _read_parts(zhang)[_sheet_part_of(zhang, "2026年11月")]
-        skipped = any(s.get("reason", "").find("fill") >= 0 or s.get("reason", "").find("已存在") >= 0
-                      for s in res2.get("skipped", []))
-        checks.append(("幂等：sheet 已存在不重建", skipped and before == after,
-                       {"skipped": res2.get("skipped"), "same": before == after}))
+        noop = any(s.get("mode") == "append" and s.get("noop") for s in res2.get("sheets", []))
+        checks.append(("幂等：重复数据不重复追加，原 sheet 字节不变", noop and before == after,
+                       {"sheets": res2.get("sheets"), "same": before == after}))
+
+        # --- check 4b: 真正新增行→只追加，已有行与自定义部件不变（2026-11-19 新口径）---
+        from xlsxzip import read_sheet_data, append_rows
+        snap_before = _read_parts(zhang)[_sheet_part_of(zhang, "2026年11月")]
+        sd = read_sheet_data(zhang, "2026年11月")
+        old_fp = [r["fp"] for r in sd["rows"] if r["row"] >= sd["data_start_row"]]
+        from sheet_writer import build_append_rows_xml
+        tpl_info = __import__("sheet_writer").TemplateInfo.from_template(template, cfg)
+        # 复用已有行样式，恒等映射
+        new_row = ["2026-11-05", "宝旺", "粤C33333", "张司机", 1, "新增路线", 50, 90, None]
+        rx = build_append_rows_xml(tpl_info, [new_row], {}, cfg,
+                                   start_row=sd["max_row"] + 1,
+                                   template_col_styles=sd["rows"][0]["styles"])
+        ar = append_rows(zhang, "2026年11月", rx, os.path.join(data, "_backup"), verify=True)
+        checks.append(("追加成功", ar.get("ok"), ar.get("errors")))
+        wb3 = openpyxl.load_workbook(zhang, data_only=True)
+        ws3 = wb3["2026年11月"]
+        appended = [ws3.cell(row=r, column=4).value for r in range(sd["max_row"] + 1, ws3.max_row + 1)]
+        max_row_after = ws3.max_row
+        wb3.close()
+        checks.append(("新行追加在末尾且内容正确",
+                       appended == ["张司机"] and max_row_after == sd["max_row"] + 1,
+                       {"appended": appended, "max_row": sd["max_row"], "after": max_row_after}))
+        snap_after = _read_parts(zhang)[_sheet_part_of(zhang, "2026年11月")]
+        checks.append(("已有行字节未变(新行插在</sheetData>前)",
+                       snap_after.startswith(snap_before[:snap_before.rfind(b"</sheetData>")]), None))
+        checks.append(("追加后 customXml 仍零改动",
+                       _read_parts(zhang).get("customXml/item1.xml") == b"SAMPLE-CUSTOM-XML-DO-NOT-LOSE", None))
 
         # --- check 5: 无数据源时生成空 sheet（框架）---
         cfg2 = json.loads(json.dumps(cfg))
@@ -197,6 +224,26 @@ def run_selftest():
         res3 = pipeline.run(cfg2, 2026, 12, tmpdir)
         checks.append(("无数据源仍生成空 sheet", any(s.get("driver") == "王司机" for s in res3.get("sheets", [])),
                        res3.get("sheets")))
+
+        # --- check 6: 以图表司机名为标识，目标司机文件不存在则新建（2026-11-19）---
+        new_tdir = os.path.join(data, "新目录", "2026年", "司机工资")
+        os.makedirs(new_tdir)
+        cfg3 = json.loads(json.dumps(cfg))
+        cfg3["paths"]["target_dir"] = new_tdir
+        cfg3["paths"]["target_file"] = "{target_dir}/{driver}{year}.xlsx"
+        cfg3["run"]["on_missing_target"] = "create"
+        res4 = pipeline.run(cfg3, 2026, 11, tmpdir)  # 数据源里是 张司机/李司机
+        new_file = os.path.join(new_tdir, "张司机2026.xlsx")
+        created = os.path.isfile(new_file)
+        checks.append(("目标文件不存在则新建", created and any(s.get("mode") == "new_file" for s in res4.get("sheets", [])),
+                       {"created": created, "sheets": res4.get("sheets"), "errors": res4.get("errors")}))
+        if created:
+            checks.append(("新建文件只含目标司机(未扫目录全量)",
+                           sorted(os.path.basename(f) for f in os.listdir(new_tdir)) == ["张司机2026.xlsx", "李司机2026.xlsx"],
+                           os.listdir(new_tdir)))
+            wb4 = openpyxl.load_workbook(new_file, data_only=True)
+            checks.append(("新建文件写入目标月份 sheet", "2026年11月" in wb4.sheetnames, wb4.sheetnames))
+            wb4.close()
 
         passed = sum(1 for _, ok, _ in checks if ok)
         total = len(checks)

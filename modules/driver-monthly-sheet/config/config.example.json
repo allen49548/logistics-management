@@ -1,7 +1,6 @@
 {
   "_comment": "司机月度表技能 · 配置样例（全脱敏，可公开）。真实配置复制到 config/local/config.json 后修改，local 已 gitignore。所有路径/字段/Sheet 命名均可配置，绝不硬编码。",
   "version": 1,
-
   "paths": {
     "_comment": "所有路径支持 {year}/{month}/{month2}/{driver} 占位符；相对路径按 workdir 解析。",
     "workdir": "/path/to/WPS/冷链物流",
@@ -12,7 +11,6 @@
     "backup_dir": "state/backups",
     "state_dir": "state"
   },
-
   "template": {
     "_comment": "模板是只含 1 个 sheet 的格式样张。sheet_index=0 取第一个；header_row 是表头所在行；style_from_row 表示新行样式照抄哪一行（表头行下一行）。",
     "sheet_index": 0,
@@ -37,27 +35,62 @@
       "路线结算": "source.路线结算"
     }
   },
-
   "source": {
     "_comment": "数据源：单个表格文档，含司机姓名列。sheet=null 取第一个；header_row 为表头行；driver_column 用于按姓名分组，支持别名列表。",
     "sheet": null,
     "header_row": 1,
     "data_start_row": 2,
-    "driver_column": ["司机", "司机姓名", "姓名", "名字"],
+    "driver_column": [
+      "司机",
+      "司机姓名",
+      "姓名",
+      "名字"
+    ],
     "driver_aliases": {},
     "column_aliases": {
-      "日期": ["日期", "出车日期", "date"],
-      "业务": ["业务", "委托方", "公司"],
-      "车牌": ["车牌", "车牌号", "车辆"],
-      "趟次": ["趟次", "车次", "次数"],
-      "路线": ["路线", "运输地点", "线路"],
-      "公里数": ["公里数", "公里", "里程", "公里数（km）"],
-      "工资": ["工资", "工资（元）", "运费"],
-      "路线结算": ["路线结算", "结算"]
+      "日期": [
+        "日期",
+        "出车日期",
+        "date"
+      ],
+      "业务": [
+        "业务",
+        "委托方",
+        "公司"
+      ],
+      "车牌": [
+        "车牌",
+        "车牌号",
+        "车辆"
+      ],
+      "趟次": [
+        "趟次",
+        "车次",
+        "次数"
+      ],
+      "路线": [
+        "路线",
+        "运输地点",
+        "线路"
+      ],
+      "公里数": [
+        "公里数",
+        "公里",
+        "里程",
+        "公里数（km）"
+      ],
+      "工资": [
+        "工资",
+        "工资（元）",
+        "运费"
+      ],
+      "路线结算": [
+        "路线结算",
+        "结算"
+      ]
     },
     "skip_empty_rows": true
   },
-
   "reimbursement": {
     "_comment": "报销明细来源。mode=ledger 从 reimbursement 的 sqlite 按 driver+month 聚合；mode=detail_sheet 从各司机报表的『N月报销明细』sheet 读；mode=none 不并入。并入方式 placement=columns(汇总成一行/几列) 或 rows(逐笔占位，仅当模板有对应行结构)。",
     "mode": "ledger",
@@ -69,21 +102,34 @@
       "reimb.count": "count",
       "reimb.amount": "amount_sum"
     },
-    "status_filter": ["reimbursed", "pending_payment"],
-    "month_source": ["pay_time", "receipt_date", "message_time", "created_at"],
+    "status_filter": [
+      "reimbursed",
+      "pending_payment"
+    ],
+    "month_source": [
+      "pay_time",
+      "receipt_date",
+      "message_time",
+      "created_at"
+    ],
     "on_missing": "blank"
   },
-
   "sheet": {
-    "_comment": "月份 sheet 命名模板与写入策略。exist_policy=fill(已存在则只填空单元格、不重建) / skip / overwrite。",
+    "_comment": "月份 sheet 命名模板与写入策略。2026-11-19 定案：只增不覆盖——sheet 不存在则新建，已存在则按去重指纹只追加新行，绝不覆盖/清空/替换已有 sheet。exist_policy 仅作兼容字段，写入层一律按 append 处理。",
     "name_pattern": "{year}年{month}月",
     "month_zero_pad": false,
-    "exist_policy": "fill",
+    "exist_policy": "append",
     "fill_empty_only": true,
     "keep_formulas": true,
-    "max_rows": 0
+    "max_rows": 0,
+    "dedup_columns": [
+      "日期",
+      "车牌",
+      "司机",
+      "路线"
+    ],
+    "dedup_columns_comment": "去重指纹列（模板列名）：这些列值都相同即视为同一条，不重复追加。留空则用整行。"
   },
-
   "drivers": {
     "_comment": "司机清单来源。from=target_dir 扫描 {driver}{year}.xlsx 文件名；也可显式 list。只有数据源里出现且有目标文件的司机才会写入。",
     "from": "target_dir",
@@ -91,14 +137,17 @@
     "exclude": [],
     "name_normalize": "strip"
   },
-
   "run": {
     "dry_run": true,
     "backup_before_write": true,
     "verify_after_write": true,
-    "write_sheets": ["source", "reimbursement"],
-    "on_missing_target": "skip_and_report",
+    "write_sheets": [
+      "source",
+      "reimbursement"
+    ],
+    "on_missing_target": "create",
     "on_unknown_driver": "skip_and_report",
-    "on_unmapped_column": "blank_and_report"
+    "on_unmapped_column": "blank_and_report",
+    "on_missing_target_comment": "目标司机文件不存在时：create=以模板为骨架新建文件后写入；skip_and_report=跳过并报告。"
   }
 }

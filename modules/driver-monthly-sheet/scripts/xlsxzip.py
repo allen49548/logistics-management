@@ -246,6 +246,259 @@ def _sheet_names(parts: dict) -> list:
         return []
 
 
+# ---------------------------------------------------------------------------
+# 增量追加（2026-11-19 用户定案）：只新增、保留已有 sheet 与原有内容，
+# 绝不覆盖 / 清空 / 替换任何已存在 sheet。sheet 不存在则新建后写入。
+# ---------------------------------------------------------------------------
+
+def _sheet_part_of(parts: dict, sheet_name: str) -> str | None:
+    """按 sheet 名解析其真实 worksheet 部件路径（如 xl/worksheets/sheet2.xml）。"""
+    try:
+        wb = ET.fromstring(parts["xl/workbook.xml"])
+        sheets_el = wb.find(_prefix("sheets", NS_MAIN))
+        if sheets_el is None:
+            return None
+        rid = None
+        for sh in sheets_el.findall(_prefix("sheet", NS_MAIN)):
+            if sh.get("name") == sheet_name:
+                rid = sh.get("{%s}id" % NS_REL_DOC)
+                break
+        if not rid:
+            return None
+        rels = ET.fromstring(parts["xl/_rels/workbook.xml.rels"])
+        for rel in rels.findall(_prefix("Relationship", NS_REL_PKG)):
+            if rel.get("Id") == rid:
+                target = rel.get("Target", "")
+                if target.startswith("/xl/"):
+                    return target.lstrip("/")
+                # 相对路径，相对 xl/ 目录
+                return os.path.normpath(os.path.join("xl", target)).replace("\\", "/")
+    except Exception:
+        return None
+    return None
+
+
+def read_sheet_data(path: str, sheet_name: str,
+                    fingerprint_cols: list | None = None) -> dict:
+    """只读提取已有 sheet 的数据行与行号，用于增量去重与追加定位。
+
+    返回 {ok, exists, sheet_part, max_row, data_start_row, headers,
+          rows: [{row, values: [...], fp: str}], errors}
+    - values 为每行按列序号（1-based）的文本值列表（inlineStr / 数值 / 共享串）。
+    - fp 为去重指纹：默认用整行非空单元格值拼接；fingerprint_cols 可指定只看
+      语义列序号（1-based），例如运输单按 [日期,车牌,司机,路线] 去重。
+    - 不写任何文件、不改动任何部件。
+    """
+    out = {"ok": False, "exists": False, "sheet_part": None, "max_row": 0,
+           "data_start_row": 2, "headers": [], "rows": [], "errors": []}
+    if not os.path.isfile(path):
+        out["errors"].append("目标文件不存在: %s" % path)
+        return out
+    parts = _read_parts(path)
+    part = _sheet_part_of(parts, sheet_name)
+    if not part or part not in parts:
+        out["exists"] = False
+        out["ok"] = True  # sheet 不存在是正常情况（将新建），不算错误
+        return out
+    out["exists"] = True
+    out["sheet_part"] = part
+
+    # 共享字符串表（inlineStr 之外的 t="s" 单元格）
+    sst = []
+    sst_key = "xl/sharedStrings.xml"
+    if sst_key in parts:
+        try:
+            sst_root = ET.fromstring(parts[sst_key])
+            for si in sst_root.findall(_prefix("si", NS_MAIN)):
+                sst.append("".join(t.text or "" for t in si.iter(_prefix("t", NS_MAIN))))
+        except Exception:
+            sst = []
+
+    def cell_value(c) -> str:
+        t = c.get("t")
+        if t == "inlineStr":
+            is_el = c.find(_prefix("is", NS_MAIN))
+            return "".join(x.text or "" for x in is_el.iter(_prefix("t", NS_MAIN))) if is_el is not None else ""
+        v = c.find(_prefix("v", NS_MAIN))
+        raw = v.text if (v is not None and v.text is not None) else ""
+        if t == "s":
+            try:
+                return sst[int(raw)]
+            except (ValueError, IndexError):
+                return raw
+        return raw
+
+    def cell_style(c) -> int:
+        try:
+            return int(c.get("s", "0") or 0)
+        except ValueError:
+            return 0
+
+    def col_num(ref: str) -> int:
+        m = re.match(r"([A-Z]+)", ref or "")
+        if not m:
+            return 0
+        n = 0
+        for ch in m.group(1):
+            n = n * 26 + (ord(ch) - 64)
+        return n
+
+    try:
+        root = ET.fromstring(parts[part])
+        sheet_data = root.find(_prefix("sheetData", NS_MAIN))
+        if sheet_data is None:
+            out["ok"] = True
+            return out
+        rows_out = []
+        for row_el in sheet_data.findall(_prefix("row", NS_MAIN)):
+            try:
+                rnum = int(row_el.get("r", "0"))
+            except ValueError:
+                rnum = 0
+            out["max_row"] = max(out["max_row"], rnum)
+            vals = {}
+            styles = {}
+            for c in row_el.findall(_prefix("c", NS_MAIN)):
+                ci = col_num(c.get("r", ""))
+                if ci:
+                    vals[ci] = cell_value(c)
+                    styles[ci] = cell_style(c)
+            if not vals:
+                continue
+            values = [vals.get(i, "") for i in range(1, max(vals) + 1)]
+            if fingerprint_cols:
+                key_vals = [values[i - 1] if i - 1 < len(values) else "" for i in fingerprint_cols]
+            else:
+                key_vals = values
+            fp = "|".join((str(x) or "").strip() for x in key_vals)
+            rows_out.append({"row": rnum, "values": values, "fp": fp,
+                             "styles": styles})
+        # 表头取第一行文本
+        if rows_out:
+            out["headers"] = rows_out[0]["values"]
+            data_rows = [r for r in rows_out if r["row"] >= out["data_start_row"]]
+            if data_rows:
+                out["data_start_row"] = min(r["row"] for r in data_rows)
+        out["rows"] = rows_out
+        out["ok"] = True
+        return out
+    except Exception as e:
+        out["errors"].append("读取 sheet 数据失败: %s: %s" % (type(e).__name__, e))
+        return out
+
+
+def append_rows(path: str, sheet_name: str, row_xmls: list,
+                backup_dir: str | None = None, verify: bool = True,
+                extra_parts: dict | None = None) -> dict:
+    """把新行 XML 追加到已有 sheet 的 sheetData 末尾（绝不改动已有行）。
+
+    与 fill_sheet 的本质区别：fill_sheet 整段替换 worksheet 字节，
+    append_rows 只在 </sheetData> 前插入新 <row>，原有行字节保持不变。
+    因此已有内容、公式、样式索引一律不动。备用 styles.xml（extra_parts）仍可
+    随本次原子写入，用于让新增行的样式索引生效（桥接采用追加式，不改老索引）。
+
+    row_xmls: list[str]，每个元素形如 '<row r="12">...</row>'，行号由调用方分配。
+    """
+    out = {"ok": False, "file": path, "sheet": sheet_name,
+           "appended": 0, "next_row": None, "errors": []}
+    if not os.path.isfile(path):
+        out["errors"].append("目标文件不存在: %s" % path)
+        return out
+    parts = _read_parts(path)
+    order = list(parts.keys())
+    orig = dict(parts)
+    part = _sheet_part_of(parts, sheet_name)
+    if not part or part not in parts:
+        out["errors"].append("找不到 sheet: %s" % sheet_name)
+        return out
+    if extra_parts:
+        parts.update(extra_parts)
+    try:
+        xml = parts[part].decode("utf-8")
+        marker = "</sheetData>"
+        pos = xml.find(marker)
+        if pos < 0:
+            out["errors"].append("sheet 缺少 sheetData 节点，无法追加")
+            return out
+        if not row_xmls:
+            out["ok"] = True  # 无新增行，零改动
+            return out
+        new_xml = xml[:pos] + "".join(row_xmls) + xml[pos:]
+        ET.fromstring(new_xml)  # 合法性校验
+        parts[part] = new_xml.encode("utf-8")
+        bak = _backup(path, backup_dir) if backup_dir else None
+        _write_parts(path, parts, order_hint=order)
+        if verify:
+            check = _read_parts(path)
+            changed = [n for n in orig if n in check and check[n] != orig[n]]
+            allowed = {part}
+            if extra_parts:
+                allowed |= set(extra_parts.keys())
+            unexpected = [n for n in changed if n not in allowed]
+            if unexpected:
+                out["errors"].append("回读校验失败，意外改动部件: %s" % ", ".join(unexpected))
+                if bak:
+                    shutil.copy2(bak, path)
+                return out
+            ET.fromstring(check[part])
+        out["ok"] = True
+        out["appended"] = len(row_xmls)
+        out["backup"] = bak
+        return out
+    except Exception as e:
+        out["errors"].append("追加异常: %s: %s" % (type(e).__name__, e))
+        return out
+
+
+def create_workbook_from_template(template: str, out_path: str,
+                                   sheet_name: str, sheet_xml: str,
+                                   backup_dir: str | None = None,
+                                   extra_parts: dict | None = None) -> dict:
+    """目标司机文件不存在时，以模板为骨架新建文件并写入首个目标 sheet。
+
+    基于模板 zip 复制全部部件，仅替换唯一 worksheet 内容并改其 sheet 名，
+    最大程度保留 WPS 特有部件（customXml/metadata/vmlDrawing 等）。
+    extra_parts: 需一并写入的部件（如桥接后的 xl/styles.xml），保证 sheet_xml 中
+      的样式索引有对应定义。
+    """
+    out = {"ok": False, "file": out_path, "errors": []}
+    if not os.path.isfile(template):
+        out["errors"].append("模板文件不存在: %s" % template)
+        return out
+    try:
+        parts = _read_parts(template)
+        sheet_parts = sorted(n for n in parts
+                             if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", n))
+        if not sheet_parts:
+            out["errors"].append("模板无 worksheet 部件")
+            return out
+        first = sheet_parts[0]
+        parts[first] = sheet_xml.encode("utf-8")
+        if extra_parts:
+            parts.update(extra_parts)
+        # workbook.xml：把首个 sheet 改名为目标名
+        wb = ET.fromstring(parts["xl/workbook.xml"])
+        sheets_el = wb.find(_prefix("sheets", NS_MAIN))
+        sheets = sheets_el.findall(_prefix("sheet", NS_MAIN)) if sheets_el is not None else []
+        if sheets:
+            sheets[0].set("name", sheet_name)
+        else:
+            if sheets_el is None:
+                sheets_el = ET.SubElement(wb, _prefix("sheets", NS_MAIN))
+            sh = ET.SubElement(sheets_el, _prefix("sheet", NS_MAIN))
+            sh.set("name", sheet_name)
+            sh.set("sheetId", "1")
+        parts["xl/workbook.xml"] = ET.tostring(wb, encoding="utf-8", xml_declaration=True)
+        _write_parts(out_path, parts)
+        if os.path.isfile(out_path):
+            ET.fromstring(_read_parts(out_path)[first])
+        out["ok"] = True
+        return out
+    except Exception as e:
+        out["errors"].append("新建工作簿异常: %s: %s" % (type(e).__name__, e))
+        return out
+
+
 def list_sheets(path: str) -> list:
     try:
         return _sheet_names(_read_parts(path))

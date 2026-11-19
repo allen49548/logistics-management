@@ -183,6 +183,35 @@ def build_sheet_xml(info: TemplateInfo, rows: list, style_map: dict,
     return "".join(parts)
 
 
+def build_append_rows_xml(info: TemplateInfo, rows: list, style_map: dict,
+                          cfg: dict, start_row: int,
+                          template_col_styles: dict | None = None) -> list:
+    """为「往已存在 sheet 追加」生成每行 XML（2026-11-19 增量写入）。
+
+    与 build_sheet_xml 的区别：只产出 <row>，不含表头/sheetViews/cols 等外壳，
+    行号从 start_row（=已有数据最大行+1）开始，由 xlsxzip.append_rows 插入到
+    sheetData 末尾，从而保证不改动任何已有行。
+
+    rows: list[list]，每个内层 list 为按列序号排列的值（与 build_sheet_xml 一致）。
+    template_col_styles: 可选，{列序号: 模板 cellXf 索引}；给出时用于对齐已有行的
+      列样式，否则回退到 info.row_style。
+    """
+    out = []
+    max_cols = max((c for c, _ in info.headers), default=1)
+    src_styles = template_col_styles or info.row_style
+    for ri, row in enumerate(rows):
+        rnum = start_row + ri
+        cells = ['<row r="%d">' % rnum]
+        for ci in range(1, max_cols + 1):
+            val = row[ci - 1] if ci - 1 < len(row) else None
+            s_tpl = src_styles.get(ci, 0)
+            s = style_map.get(s_tpl, 0)
+            cells.append(_cell_value_xml(ci, rnum, val, s, {}))
+        cells.append('</row>')
+        out.append("".join(cells))
+    return out
+
+
 def _col_to_num(col: str) -> int:
     n = 0
     for ch in col.upper():
