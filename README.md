@@ -12,9 +12,11 @@
 文档导航：
 
 - [通用 Agent 接入](docs/通用Agent接入.md)：CLI / MCP / function calling 的安装与接入示例。
+- [分层架构设计](docs/分层架构设计.md)：Core / Business / Operations 三层职责、契约、依赖约束与迁移映射。
 - [功能点清单](docs/功能点清单.md)：38 个功能点的名称、用途、输入/输出、依赖、触发方式。
 - [自测报告](docs/自测报告.md)：逐项测试步骤、预期结果、实际结果。
 - [模块划分与数据流](docs/模块划分与数据流.md)、[触发与入口](docs/触发与入口.md)、[报单功能](docs/报单功能.md)、[待确认清单](docs/待确认清单.md)。
+- `blueprint/`：可复制的分层参考实现，含依赖方向守卫与端到端自测。
 
 ---
 
@@ -28,6 +30,7 @@
   `modules/driver-month-report`、`modules/driver-monthly-sheet`。
 - **新能力**：`scripts/intake.py` 把飞书群运输单解析成结构化明细，再调用内置月度制表写入。
 - **配置真源**：各内置模块自己的配置；`config/modules.json` 只声明内置模块根与 action 命令。
+- **分层参考实现**：`blueprint/` 展示 Core / Business / Operations 单向依赖骨架，不影响现有运行入口。
 
 为什么内置而不是仅委托：避免双真源与外部路径依赖。复制时保留了原业务口径、WPS zip 层精确写入、
 报销四方池六层去重、工资确认硬闸门等已验证逻辑。
@@ -190,6 +193,7 @@ python3 scripts/agent.py call logistics_doctor
 python3 scripts/logistics.py intake selftest
 python3 tests/test_skill.py
 python3 tests/test_agent_adapter.py
+python3 -m unittest discover -s blueprint/tests -t .
 
 # 7. 可选：安装全局命令 logistics / logistics-agent
 ./install.sh
@@ -360,12 +364,19 @@ logistics-management/
 │   └── driver-monthly-sheet/    内置月度制表模块
 ├── docs/
 │   ├── 通用Agent接入.md
+│   ├── 分层架构设计.md
 │   ├── 功能点清单.md
 │   ├── 自测报告.md
 │   ├── 模块划分与数据流.md
 │   ├── 触发与入口.md
 │   ├── 报单功能.md
 │   └── 待确认清单.md
+├── blueprint/                   可复用的 Core / Business / Operations 参考实现
+│   ├── core/                    通用机制与抽象端口（零业务语义）
+│   ├── business/                场景规则与流程编排
+│   ├── operations/              适配器与入口驱动
+│   ├── composition/             唯一组装根
+│   └── tests/                   依赖守卫 + 端到端自测
 ├── tests/
 │   ├── test_skill.py
 │   └── test_agent_adapter.py
