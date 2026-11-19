@@ -1,0 +1,4 @@
+# 核心计算与核对只用 Python 标准库。
+# 仅渲染统一格式 xlsx 与读取 xlsx 来源时需要 openpyxl。
+# 若只跑 compute / verify 且输入为 CSV/JSON，可不安装任何依赖。
+openpyxl>=3.1,<4

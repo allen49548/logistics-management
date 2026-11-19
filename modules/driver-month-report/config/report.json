@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "report": {
+    "title_template": "{year}年{month}月汇总",
+    "current_period": "2026-08",
+    "previous_period": "2026-07",
+    "comparison_only_previous": true,
+    "unit": "元",
+    "generated_by": "driver-month-report"
+  },
+  "source": {
+    "driver_dir": "/Users/liaohaocheng/Desktop/WPS/冷链物流/2026年/司机工资",
+    "file_patterns": [
+      "*2026.xlsx"
+    ],
+    "exclude_globs": [
+      "~$*",
+      ".*",
+      "*汇总*.xlsx",
+      "*.tmp.xlsx"
+    ],
+    "driver_name_regex": "^(?P<name>.+?)2026$",
+    "sheet_name_template": "{year}.{month}",
+    "driver_aliases": {
+      "辛荣超": [
+        "幸荣超"
+      ]
+    },
+    "driver_order": []
+  },
+  "output": {
+    "dir": "",
+    "filename_template": "{title}.xlsx",
+    "overwrite": {
+      "enabled": true,
+      "mode": "recycle",
+      "recycle_dir": ".recycle",
+      "match_globs": [
+        "*{month}月汇总*.xlsx",
+        "{title}.xlsx",
+        "*{month}月汇总*.xls"
+      ],
+      "report_deleted": true
+    },
+    "sheets": {
+      "summary": "{month}月汇总",
+      "detail": "项目明细",
+      "spec": "口径与校验"
+    }
+  },
+  "scan": {
+    "label": {
+      "max_len": 24,
+      "strip_parenthetical": true
+    },
+    "amount": {
+      "direction": "right",
+      "max_offset": 4,
+      "stop_at_known_label": true,
+      "parse_text": true,
+      "strip_chars": [
+        "¥",
+        "￥",
+        ",",
+        "，",
+        " ",
+        "元",
+        "　"
+      ],
+      "note_max_offset": 3,
+      "note_max_len": 24
+    }
+  },
+  "detail": {
+    "enabled": true,
+    "header_rows": [
+      1
+    ],
+    "total_row_keywords": [
+      "合计",
+      "总计",
+      "小计"
+    ],
+    "fallback_to_sum": true,
+    "stop_at_subtotal": true
+  },
+  "resolution": {
+    "default_order": [
+      "label",
+      "detail",
+      "derive"
+    ],
+    "strategy_titles": {
+      "label": "汇总标签",
+      "detail": "明细合计",
+      "derive": "源表净利倒算"
+    },
+    "conflict_flag": true,
+    "agreement_tolerance_pct": 0.005
+  },
+  "overlap": {
+    "enabled": true,
+    "decide_by": "source_net_profit",
+    "fallback": "exclude"
+  },
+  "calculation": {
+    "net_profit_expression": "income - wage - expense",
+    "variables": {
+      "income": "income",
+      "wage": "wage",
+      "expense": "expense"
+    },
+    "source_profit_item": "source_net_profit",
+    "check_tolerance": 0.01,
+    "round_digits": 2
+  },
+  "mom": {
+    "enabled": true,
+    "value_key": "net_profit",
+    "delta_expression": "current - previous",
+    "ratio_expression": "(current - previous) / previous",
+    "decimals": 2
+  },
+  "comparability": {
+    "enabled": true,
+    "reference_item": "income_freight",
+    "secondary_item": "wage_total",
+    "min_ratio": 0.6,
+    "require_both_net": true
+  },
+  "highlight": {
+    "increase_color": "C00000",
+    "decrease_color": "008000",
+    "flat_color": "808080",
+    "fill": "FFF2CC",
+    "banner_fill": "FCE4D6"
+  },
+  "number_formats": {
+    "money": "¥#,##0.00",
+    "percent": "0.00%",
+    "int": "0"
+  },
+  "columns": [
+    {
+      "key": "index",
+      "title": "序号",
+      "width": 6,
+      "align": "center"
+    },
+    {
+      "key": "driver",
+      "title": "司机",
+      "width": 11
+    },
+    {
+      "key": "income",
+      "title": "运费收入",
+      "width": 14,
+      "format": "money"
+    },
+    {
+      "key": "wage",
+      "title": "工资",
+      "width": 13,
+      "format": "money"
+    },
+    {
+      "key": "expense",
+      "title": "其他支出合计",
+      "width": 15,
+      "format": "money"
+    },
+    {
+      "key": "net_profit",
+      "title": "净利润（{month}月）",
+      "width": 16,
+      "format": "money",
+      "bold": true
+    },
+    {
+      "key": "prev_net_profit",
+      "title": "净利润（{prev_month}月）",
+      "width": 16,
+      "format": "money"
+    },
+    {
+      "key": "delta",
+      "title": "环比增减额",
+      "width": 15,
+      "format": "money",
+      "highlight": "delta",
+      "bold": true
+    },
+    {
+      "key": "ratio",
+      "title": "环比增减比例",
+      "width": 15,
+      "format": "percent",
+      "highlight": "ratio",
+      "bold": true,
+      "databar": true
+    },
+    {
+      "key": "trend",
+      "title": "趋势",
+      "width": 9,
+      "align": "center",
+      "highlight": "trend"
+    },
+    {
+      "key": "status",
+      "title": "数据状态",
+      "width": 19,
+      "align": "center"
+    },
+    {
+      "key": "note",
+      "title": "异常 / 缺失说明（含数据来源）",
+      "width": 62,
+      "wrap": true
+    }
+  ],
+  "kpi": [
+    {
+      "key": "net_current",
+      "title": "{month}月净利润合计",
+      "format": "money"
+    },
+    {
+      "key": "net_previous",
+      "title": "{prev_month}月净利润合计",
+      "format": "money"
+    },
+    {
+      "key": "delta",
+      "title": "环比增减额（可比口径）",
+      "format": "money",
+      "highlight": true
+    },
+    {
+      "key": "ratio",
+      "title": "环比增减比例（可比口径）",
+      "format": "percent",
+      "highlight": true
+    },
+    {
+      "key": "comparable",
+      "title": "可比司机数",
+      "format": "int"
+    },
+    {
+      "key": "issues",
+      "title": "异常 / 缺失项",
+      "format": "int"
+    }
+  ],
+  "messages": {
+    "subtitle": "期间：{year}年{month}月　｜　环比对象：{prev_year}年{prev_month}月（仅此一个月）　｜　单位：{unit}　｜　口径：净利润 = 运费收入 − 工资 − 其他支出；环比按可比司机口径　｜　生成时间：{generated_at}",
+    "banner": "环比结论：{month}月净利润合计 {cur}，较 {prev_month}月 {prev} {trend_word} {abs_delta}（{ratio}）；可比司机 {comparable} 人（上升 {up} 人 / 下降 {down} 人 / 不可比 {incomparable} 人）。",
+    "banner_no_prev": "环比结论：{prev_month}月可用数据不足，无法形成有效环比；下方已逐人列出缺失原因，补录后重跑即可。",
+    "missing_sheet": "源文件无「{sheet}」工作表，{month}月无法取数",
+    "missing_file": "未找到该司机对应文件",
+    "missing_item": "未识别「{item}」：表内无匹配标签（候选：{aliases}）",
+    "derived_income": "运费未单独列示，按源表净利润 {src} + 工资 {wage} + 其他支出 {expense} 倒算 = {value}（非独立校验值）",
+    "detail_used": "「{item}」取自明细合计行 {cell}（表头「{header}」）",
+    "detail_sum_used": "「{item}」由明细行求和 {cell}（无合计行）",
+    "label_conflict": "「{item}」命中多个标签：{pairs}，按标签优先级取 {chosen}",
+    "strategy_conflict": "「{item}」{preferred}值 {a} 与{other}值 {b} 不一致（差 {diff}），已取{preferred}",
+    "overlap_excluded": "「{item}」已含于「{owner}」（经源表净利润校验），不重复计入",
+    "overlap_included": "「{item}」未含于「{owner}」，按源表净利润校验结果单独计入",
+    "profit_diff": "计算净利润 {calc} 与源表 {src} 差 {diff}，口径需业务确认",
+    "profit_match": "计算净利润与源表一致（{calc}）",
+    "no_source_profit": "源表无净利润标签，未做校验",
+    "cannot_compute": "缺运费或支出科目，净利润无法计算",
+    "prev_missing": "{prev_month}月净利润无法计算",
+    "incomparable_partial": "{prev_month}月{metric}仅为{month}月的 {pct}，低于 {min_pct} 阈值，视为不完整月份",
+    "incomparable_no_prev": "{prev_month}月无数据",
+    "ratio_guard": "{prev_month}月净利润为 {prev}，比例不具可比性",
+    "flat": "持平",
+    "up": "上升",
+    "down": "下降"
+  },
+  "status": {
+    "ok": "完整",
+    "no_data": "无{month}月数据",
+    "cannot_compute": "无法计算",
+    "differs": "与源表有差异",
+    "noted": "有备注",
+    "incomparable": "环比不可比"
+  },
+  "render": {
+    "kpi_band_columns": 11
+  }
+}

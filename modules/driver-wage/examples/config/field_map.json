@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "note": "列映射支持三种写法：表头名（csv 演示）、Excel 列字母（xlsx 演示见 references/ONBOARDING.md）、0-based 数字。每位司机表头不同时各配一份 source 即可。",
+  "driver_aliases": {
+    "示例司机A": "D01",
+    "示例司机A旧称": "D01",
+    "示例司机B": "D02",
+    "示例司机C": "D03",
+    "示例司机D": "D04",
+    "D01": "D01",
+    "D02": "D02",
+    "D03": "D03",
+    "D04": "D04"
+  },
+  "trips_sources": [
+    {
+      "id": "sample_trips",
+      "type": "csv",
+      "path": "{data_dir}/trips.csv",
+      "header_row": 1,
+      "columns": {
+        "date": "date",
+        "driver": "driver",
+        "plate": "plate",
+        "business": "business",
+        "trip_no": "trip_no",
+        "route": "route",
+        "km": "km"
+      },
+      "filters": {
+        "require": ["driver", "date", "km"],
+        "km_min": 1,
+        "km_max": 3000
+      }
+    }
+  ],
+  "reimbursement": {
+    "type": "csv",
+    "path": "{data_dir}/reimbursement.csv",
+    "header_row": 1,
+    "columns": {"driver": "driver", "month": "month", "amount": "amount"}
+  },
+  "history": {
+    "type": "csv",
+    "path": "{data_dir}/history_wages.csv",
+    "header_row": 1,
+    "columns": {"driver": "driver", "month": "month", "net": "net"}
+  },
+  "external_bill": {
+    "enabled": false,
+    "note": "真实账单常带「核对费用 / 核对差异」列；启用后可交叉验证运输单本身是否可信。",
+    "type": "csv",
+    "path": "{data_dir}/external_bill.csv",
+    "header_row": 1,
+    "columns": {"fee": "费用", "checked_fee": "核对费用", "diff": "核对差异"}
+  },
+  "wage_sheet_reimbursement": {
+    "enabled": false,
+    "note": "历史工资表底部汇总块的「报销支出」常与报销台账口径不同；启用后做三方勾稽。",
+    "path": "{root}/examples/data/*.xlsx",
+    "labels": ["报销", "报销支出", "总报销", "报销合计"]
+  }
+}

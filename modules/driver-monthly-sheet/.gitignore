@@ -1,0 +1,22 @@
+# 真实配置与运行产物：绝不进 git
+config/local/*
+!config/local/.gitkeep
+state/
+*.sqlite
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 备份与临时
+_backup/
+*.bak
+*.tmp

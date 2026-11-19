@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "precision": 2,
+  "currency": "CNY",
+  "note": "脱敏示例：演示四种真实存在的计薪形态。真实规则由 learn-rules 从历史工资表反推后放入 config/local/，且必须逐条人工确认。",
+  "tables": {
+    "route_price_sample": {
+      "示例路线A": 150,
+      "示例路线B": 200,
+      "示例路线C": 330
+    }
+  },
+  "drivers": {
+    "D01": {
+      "display_name": "示例司机A",
+      "wage": {
+        "op": "tier",
+        "field": "km",
+        "brackets": [
+          {"lte": 60, "value": 130},
+          {"lte": 150, "value": 150},
+          {"lte": 250, "value": 180}
+        ],
+        "default": 200
+      },
+      "confirmed": true,
+      "confirmed_by": "示例发起人",
+      "confirmed_at": "2026-09-01T09:00:00+08:00",
+      "source": "历史工资表 IF 阶梯公式"
+    },
+    "D02": {
+      "display_name": "示例司机B",
+      "wage": {
+        "op": "formula",
+        "expr": "=IF(G2<=60,130,IF(G2<=150,150,IF(G2<=250,180,200)))",
+        "cell_map": {"G2": "km"}
+      },
+      "confirmed": true,
+      "confirmed_by": "示例发起人",
+      "confirmed_at": "2026-09-01T09:00:00+08:00",
+      "source": "历史工资表原样 Excel 公式（列引用已映射为标准字段）"
+    },
+    "D03": {
+      "display_name": "示例司机C",
+      "wage": {
+        "op": "lookup",
+        "key": "route",
+        "table": "route_price_sample",
+        "default": 0
+      },
+      "confirmed": true,
+      "confirmed_by": "示例发起人",
+      "confirmed_at": "2026-09-01T09:00:00+08:00",
+      "source": "历史工资表 VLOOKUP 路线价目表"
+    },
+    "D04": {
+      "display_name": "示例司机D",
+      "wage": {"op": "const", "value": 150},
+      "adjustments": [
+        {"op": "subtract", "label": "示例扣款", "amount": "50.00"}
+      ],
+      "confirmed": true,
+      "confirmed_by": "示例发起人",
+      "confirmed_at": "2026-09-01T09:00:00+08:00",
+      "source": "历史工资表固定单价 + 固定扣款"
+    }
+  }
+}

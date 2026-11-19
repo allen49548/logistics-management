@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# 运行时产物
+output/
+.recycle/
+*.log
+
+# 本地覆盖配置（如需保留个性化路径，用 report.local.json，不提交）
+config/report.local.json

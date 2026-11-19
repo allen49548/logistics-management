@@ -1,0 +1,15 @@
+# 自动报销系统 运行依赖
+# 安装：pip install -r requirements.txt
+
+# 读写 .xlsx 报表（openpyxl 用于 zip 层精确替换单元格，避免破坏公式/格式）
+openpyxl>=3.0
+
+# 图片感知哈希去重（dHash，Pillow 用于读取像素计算汉明距离）
+Pillow>=9.0
+
+# ---- 外部前置依赖（非 pip，需单独安装并登录）----
+# lark-cli：飞书命令行工具，用于
+#   - 拉取群消息与图片资源（im +chat-messages-list）
+#   - 发送群/私聊通报（im +chat-messages-send 或 bot 直发）
+#   - 创建/查询报销确认任务（group_task.py 内部调用）
+# 请参考飞书开放平台安装并登录后再运行本系统。

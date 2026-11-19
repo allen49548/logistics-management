@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "precision": 2,
+  "currency": "CNY",
+  "paths": {
+    "data_dir": "{root}/examples/data",
+    "out_dir": "{root}/examples/out",
+    "state_dir": "{root}/state"
+  },
+  "checks": {
+    "amount_tolerance": "0.01",
+    "variance_warn_pct": 40,
+    "variance_block_pct": 90,
+    "max_km": 3000,
+    "duplicate_key": [
+      "driver",
+      "date",
+      "route",
+      "km",
+      "trip_no"
+    ],
+    "require_all_rules_confirmed": true
+  },
+  "gate": {
+    "owner": "示例发起人",
+    "confirm_ttl_hours": 72,
+    "note": "确认是硬闸门：定时任务只跑到 preview，绝不代替发起人确认。"
+  },
+  "notify": {
+    "channel": "dry-run",
+    "owner_user_id": "",
+    "message_template": "【工资条｜{month}】{name}\n应发 ¥{gross}（{trips} 趟 / {km} 公里）\n报销 ¥{reimbursement}　扣款 ¥{deductions}\n实发 ¥{net}\n明细见附件，如有疑问请回复核对。",
+    "timeout": 30,
+    "note": "channel 可选 dry-run / stdout / feishu。默认 dry-run，只有显式 --no-dry-run 才真发；启用飞书主源后只私发飞书在册司机。",
+    "feishu_roster_only": true
+  },
+  "schedule": {
+    "rrule": "FREQ=MONTHLY;BYMONTHDAY=10;BYHOUR=9;BYMINUTE=0",
+    "timezone": "Asia/Shanghai",
+    "scope": "只发起计算+核对+待确认预览，绝不自动私发"
+  },
+  "roster": {
+    "source": "local",
+    "merge": "union",
+    "active_only": true,
+    "note": "脱敏样例不联网、不依赖飞书；把 source 改为 feishu 并配置 department_query / chat_id 即可启用飞书主源。",
+    "feishu": {
+      "cli": "lark-cli",
+      "department_query": "",
+      "department_contains": "",
+      "chat_id": "",
+      "exclude_names": [
+        "示例发起人"
+      ],
+      "exclude_open_ids": [],
+      "exclude_external_users": true,
+      "cache_path": "{root}/state/feishu_roster.json",
+      "max_age_hours": 24,
+      "timeout": 30,
+      "page_size": 30
+    }
+  }
+}

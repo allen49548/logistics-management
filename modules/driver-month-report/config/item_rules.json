@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "description": "项目识别规则。代码只按本文件的 key / 类别 / 别名 / 优先级运行，不含任何硬编码项目名、金额或结果。",
+  "categories": {
+    "收入": {"order": 1, "title": "运费收入", "role": "income"},
+    "工资": {"order": 2, "title": "工资", "role": "wage"},
+    "支出": {"order": 3, "title": "其他支出", "role": "expense"},
+    "校验": {"order": 9, "title": "校验项", "role": "check"}
+  },
+  "defaults": {
+    "resolve_order": ["label", "detail"],
+    "allow_negative": true,
+    "min_abs": 0.0
+  },
+  "items": [
+    {
+      "key": "income_freight",
+      "name": "运费（收入）",
+      "category": "收入",
+      "aliases": ["总运费", "运费收入", "运费合计", "运费"],
+      "alias_exclude": ["支出", "结算", "明细"],
+      "resolve_order": ["label", "derive", "detail"],
+      "detail": {
+        "header_keywords": ["运费"],
+        "header_exclude": ["支出", "结算", "单价"],
+        "allow_sum_fallback": true
+      },
+      "notes": "收入类基准。表内无标签时按源表净利润倒算，并在明细中标注为非独立校验值。"
+    },
+    {
+      "key": "wage_total",
+      "name": "工资",
+      "category": "工资",
+      "aliases": ["总工资支出", "工资支出", "总工资", "工资合计", "工资（元）", "工资"],
+      "alias_exclude": ["奖金", "单价"],
+      "resolve_order": ["label", "detail"],
+      "detail": {
+        "header_keywords": ["工资"],
+        "header_exclude": ["支出", "总", "单价"],
+        "allow_sum_fallback": true
+      },
+      "covers": ["bonus"],
+      "notes": "工资为合计口径；部分报表的“工资支出 / 总工资支出”已包含奖金，是否重复由源表净利润校验决定（见 overlap 配置）。"
+    },
+    {
+      "key": "bonus",
+      "name": "奖金",
+      "category": "支出",
+      "aliases": ["奖金"],
+      "resolve_order": ["label"],
+      "suppressed_by": "wage_total",
+      "notes": "易与工资合计重复的科目。"
+    },
+    {
+      "key": "expense_reimburse",
+      "name": "报销",
+      "category": "支出",
+      "aliases": ["报销支出", "报销费用", "报销"],
+      "resolve_order": ["label"],
+      "notes": "部分按月的报销支出为多科目合并值（如充电 + 高速），合并值优先，绝不与分项同时累加。"
+    },
+    {
+      "key": "expense_fuel",
+      "name": "油费",
+      "category": "支出",
+      "aliases": ["油费支出", "燃油费", "油费"],
+      "resolve_order": ["label"]
+    },
+    {
+      "key": "expense_toll",
+      "name": "高速费",
+      "category": "支出",
+      "aliases": ["高速费支出", "高速费", "路桥费", "过路费"],
+      "resolve_order": ["label"]
+    },
+    {
+      "key": "expense_charge",
+      "name": "充电费",
+      "category": "支出",
+      "aliases": ["充电费支出", "充电费", "电费"],
+      "resolve_order": ["label"]
+    },
+    {
+      "key": "expense_loan",
+      "name": "车贷",
+      "category": "支出",
+      "aliases": ["车贷支出", "车贷还款", "还车贷", "车贷扣款", "车贷月供", "车贷余额", "车贷"],
+      "resolve_order": ["label"],
+      "dedupe": "single_value",
+      "notes": "所有车贷口径别名归并到同一 key，同一司机同月只保留一个取值，禁止跨别名累加。"
+    },
+    {
+      "key": "expense_manage",
+      "name": "管理费",
+      "category": "支出",
+      "aliases": ["管理费支出", "管理费"],
+      "resolve_order": ["label"]
+    },
+    {
+      "key": "expense_other",
+      "name": "其他支出",
+      "category": "支出",
+      "aliases": ["其他支出", "杂费", "维修费", "保养费", "保险支出", "罚款"],
+      "resolve_order": ["label"],
+      "disabled": true,
+      "notes": "预留扩展位；默认关闭，启用后可自动纳入支出合计。"
+    },
+    {
+      "key": "source_net_profit",
+      "name": "源表净利润",
+      "category": "校验",
+      "aliases": ["净利润", "净利", "净收益", "利润"],
+      "alias_exclude": ["率"],
+      "resolve_order": ["label"],
+      "notes": "仅用于校验与倒算，不计入支出合计。"
+    }
+  ]
+}

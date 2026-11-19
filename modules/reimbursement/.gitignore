@@ -1,0 +1,47 @@
+# ===== 自动报销系统 .gitignore =====
+# 以下文件含真实隐私与本地环境信息，绝对不能入库。
+
+# 真实运行配置（含 chat id / open_id / 本地绝对路径）
+# 入库的是脱敏模板 config.example.json，使用时复制为 config.json 再填值
+# 用 **/ 前缀，无论技能目录放在哪一层都能忽略
+**/config.json
+
+# 飞书下载的真实付款凭证截图（含司机姓名/金额/订单号）
+**/lark-im-resources/
+
+# 真实台账数据库（含司机/金额/日期/订单号/本地路径）
+**/state/ledger.sqlite
+
+# 真实报表备份（Excel 含财务数据）
+**/state/backups/
+
+# 运行日志（含真实 chat_id / 任务 GUID / 金额 / 本地路径）
+**/state/runs/
+
+# 发送记录（运行态）
+**/state/monthly_sent.json
+
+# 任务完成通知幂等记录（运行态，含真实 task_id）
+**/state/task_completion_notified.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# 本地 Agent 配置（不公开）
+.claude/settings.local.json
+CLAUDE.md
+
+# 云同步冲突副本
+.sync-conflict-*

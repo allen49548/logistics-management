@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "_comment": "物流管理系统 · 脱敏配置模板。复制到 config/local/config.json 后按真实环境修改；config/local/ 已 gitignore，不进仓库。文件名/字段/路径/命令全部可配置，代码中不硬编码真实姓名、金额、路径。",
+
+  "runtime": {
+    "python": "python3",
+    "subprocess_timeout_sec": 600,
+    "state_dir": "state",
+    "logs_dir": "state/logs"
+  },
+
+  "agent": {
+    "_comment": "跨平台接入：任意支持 CLI / MCP / function calling 的 AI Agent 均可使用；WorkBuddy 仅为可选入口。",
+    "tool_manifest": "config/agent_tools.json",
+    "discover": "python3 scripts/agent.py list",
+    "call": "python3 scripts/agent.py call <tool> --args-json '[...]'",
+    "mcp_stdio": "python3 scripts/agent.py serve",
+    "safety": {
+      "read": "默认允许",
+      "write": "LOGISTICS_ALLOW_WRITE=1",
+      "external": "LOGISTICS_ALLOW_EXTERNAL=1"
+    },
+    "lark_cli": "PATH 中的 lark-cli；或环境变量 LOGISTICS_LARK_CLI / LARK_CLI"
+  },
+
+  "report_root": "{WPS_ROOT}/冷链物流",
+  "driver_dir": "{report_root}/{year}年/司机工资",
+  "driver_file_pattern": "{driver}{year}.xlsx",
+
+  "drivers": {
+    "aliases": {
+      "幸荣超": "辛荣超"
+    },
+    "exclude_names": ["群主", "负责人", "机器人"]
+  },
+
+  "feishu": {
+    "cli": "lark-cli",
+    "read_identity": "user",
+    "send_identity": "bot",
+    "messages_command": "lark-cli im +chat-messages-list --as user --page-all --order asc --no-reactions --download-resources --format json",
+    "attachment_dir": "lark-im-resources",
+    "primary_chat_id": "REPLACE_WITH_PRIMARY_CHAT_ID",
+    "owner_dm_chat_id": "REPLACE_WITH_OWNER_DM_CHAT_ID",
+    "owner_open_id": "REPLACE_WITH_OWNER_OPEN_ID",
+    "bot_check": {
+      "enabled": true,
+      "on_required": "report_and_stop",
+      "reminder": "先按 飞书机器人配置教程.md 配置机器人；不得用个人身份冒充发送。"
+    }
+  },
+
+  "intake": {
+    "_comment": "报单：飞书群运输单 → 结构化明细 → 按司机分组 → 生成数据源 → 调用内置月度制表模块写入各司机报表。所有字段别名可配置。",
+    "window_days": 14,
+    "accepted_sources": ["text_message", "image_transcription", "attached_xlsx", "attached_csv"],
+    "image_transcription": "agent_vision",
+    "low_confidence": "manual_review",
+    "fields": {
+      "date":      ["日期", "出车日期", "date"],
+      "driver":    ["司机", "司机姓名", "姓名", "名字", "driver"],
+      "business":  ["业务", "委托方", "公司", "business"],
+      "plate":     ["车牌", "车牌号", "车辆", "plate"],
+      "trip":      ["趟次", "车次", "次数", "trip"],
+      "route":     ["路线", "运输地点", "线路", "route"],
+      "km":        ["公里数", "公里", "里程", "公里数（km）", "km"],
+      "wage":      ["工资", "工资（元）", "运费", "wage"],
+      "settle":    ["路线结算", "结算", "settle"],
+      "reimburse": ["报销", "报销金额", "reimburse"]
+    },
+    "required_fields": ["date", "driver", "route", "km"],
+    "driver_from": "sender_or_field",
+    "dedup": {
+      "key_fields": ["message_id", "driver", "date", "route", "km", "trip"],
+      "store": "state/intake/seen.jsonl",
+      "on_duplicate": "skip"
+    },
+    "data_source": {
+      "path": "state/intake/{year}年{month}月运输单.xlsx",
+      "columns": ["日期", "业务", "车牌", "司机", "趟次", "路线", "公里数", "工资", "路线结算"],
+      "sheet_name": "运输单"
+    },
+    "write": {
+      "module": "monthly_sheet",
+      "action": "run",
+      "default_dry_run": true,
+      "require_existing_target": true,
+      "on_unknown_driver": "report_and_skip"
+    },
+    "report_format": {
+      "_comment": "报表格式样张待确认：当前司机报表表头不统一（辛荣超式 日期/业务/车牌/名字/联系方式/趟次/路线/公里数/工资/运费；康国强式 日期/委托方/司机/运输地点/公里数/工资（元）/运费；王博成式 多一列路线结算）。默认使用内置 monthly-sheet 模板；如要按某司机真实表作样张，在 config/local/config.json 指定 sample_driver。",
+      "mode": "template",
+      "template": "REPLACE_WITH_SINGLE_SHEET_TEMPLATE.xlsx",
+      "sample_driver": null
+    }
+  },
+
+  "triggers": {
+    "at": {
+      "enabled": true,
+      "gate_module": "reimbursement",
+      "gate_action": "mention_gate",
+      "classify_action": "mention_classify",
+      "ack_action": "mention_ack",
+      "note": "先回应再执行；权限分级沿用内置 reimbursement 模块的 mention_policy；群/内容门槛为唯一真源。"
+    },
+    "automations": {
+      "reimb_monthly": "每月 1–4 号 09:00（沿用内置 reimbursement 模块口径，按部署环境注册自动化）",
+      "wage_monthly": "每月 10 号 09:00（沿用内置 driver-wage 模块口径，按部署环境注册自动化）",
+      "intake": "按需/手动；如需定时由部署环境自行创建，本工具包不擅自新建自动化"
+    }
+  }
+}

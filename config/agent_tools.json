@@ -1,0 +1,1688 @@
+{
+  "schema_version": 1,
+  "name": "logistics-management",
+  "title": "物流管理系统通用工具清单",
+  "description": "供 CLI / function-calling / MCP 共用的工具描述；业务 action 由 modules.json 生成。",
+  "runtime": {
+    "cli": "python3 scripts/agent.py",
+    "mcp": "python3 scripts/agent.py serve",
+    "python_min": "3.10"
+  },
+  "security": {
+    "read": "默认允许",
+    "write": "需设置环境变量 LOGISTICS_ALLOW_WRITE=1（--help 除外）",
+    "external": "需设置环境变量 LOGISTICS_ALLOW_EXTERNAL=1（--help 除外）",
+    "note": "所有工具均以 argv 数组执行，不经过 shell；图片未转录、工资确认等硬闸门仍由业务脚本执行。"
+  },
+  "tools": [
+    {
+      "name": "logistics_list",
+      "group": "meta",
+      "action": "list",
+      "purpose": "列出模块与动作",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "list"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_config",
+      "group": "meta",
+      "action": "config",
+      "purpose": "查看生效配置",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "config"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_doctor",
+      "group": "meta",
+      "action": "doctor",
+      "purpose": "静态自检",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "doctor"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_sync_roster",
+      "group": "reimb",
+      "action": "sync_roster",
+      "purpose": "司机报销：可选同步司机名册（仅提升归属精度）",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "sync_roster"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_resolve",
+      "group": "reimb",
+      "action": "resolve",
+      "purpose": "司机报销：逐条解析凭证归属司机",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "resolve"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_dedup_check",
+      "group": "reimb",
+      "action": "dedup_check",
+      "purpose": "司机报销：四方池六层去重（单条）",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "dedup_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_dedup_batch",
+      "group": "reimb",
+      "action": "dedup_batch",
+      "purpose": "司机报销：批量去重",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "dedup_batch"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_ledger_add",
+      "group": "reimb",
+      "action": "ledger_add",
+      "purpose": "司机报销：入账登记",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "ledger_add"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_balance",
+      "group": "reimb",
+      "action": "balance",
+      "purpose": "司机报销：按司机四态/未结",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "balance"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_index_add",
+      "group": "reimb",
+      "action": "index_add",
+      "purpose": "司机报销：维护群历史池",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "index_add"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_write_detail",
+      "group": "reimb",
+      "action": "write_detail",
+      "purpose": "司机报销：写入唯一报销明细 sheet",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "write_detail"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_group_task",
+      "group": "reimb",
+      "action": "group_task",
+      "purpose": "司机报销：建报销确认任务（闭环必需）",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "group_task"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_notify",
+      "group": "reimb",
+      "action": "notify",
+      "purpose": "司机报销：群+负责人两层通报",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "notify"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_monthly",
+      "group": "reimb",
+      "action": "monthly",
+      "purpose": "司机报销：月初月报（1-4号）",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "monthly"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_mention_gate",
+      "group": "reimb",
+      "action": "mention_gate",
+      "purpose": "司机报销：@ 触发群/内容门槛",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "mention_gate"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_mention_classify",
+      "group": "reimb",
+      "action": "mention_classify",
+      "purpose": "司机报销：@ 权限分级",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "mention_classify"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_mention_ack",
+      "group": "reimb",
+      "action": "mention_ack",
+      "purpose": "司机报销：先调侃回应再执行",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "mention_ack"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_bot_check",
+      "group": "reimb",
+      "action": "bot_check",
+      "purpose": "司机报销：飞书机器人配置自检",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "bot_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_reimb_driver_copy",
+      "group": "reimb",
+      "action": "driver_copy",
+      "purpose": "司机报销：群内极简文案",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "reimb",
+        "driver_copy"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_compute",
+      "group": "wage",
+      "action": "compute",
+      "purpose": "司机工资计算与核对：按规则计算工资",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "compute"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_verify",
+      "group": "wage",
+      "action": "verify",
+      "purpose": "司机工资计算与核对：独立路径核对（六类核对）",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "verify"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_preview",
+      "group": "wage",
+      "action": "preview",
+      "purpose": "司机工资计算与核对：定时终点：待确认预览，绝不私发",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "preview"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_confirm",
+      "group": "wage",
+      "action": "confirm",
+      "purpose": "司机工资计算与核对：发起人确认硬闸门",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "confirm"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_dispatch",
+      "group": "wage",
+      "action": "dispatch",
+      "purpose": "司机工资计算与核对：一人一条私发（默认 dry-run）",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "dispatch"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_sync_roster",
+      "group": "wage",
+      "action": "sync_roster",
+      "purpose": "司机工资计算与核对：飞书名册同步（主源）",
+      "risk": "external",
+      "risk_label": "外部发送/远程读取",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "sync_roster"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_status",
+      "group": "wage",
+      "action": "status",
+      "purpose": "司机工资计算与核对：查状态/确认/回执",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "status"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_validate",
+      "group": "wage",
+      "action": "validate",
+      "purpose": "司机工资计算与核对：人话配置校验",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "validate"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_wage_init",
+      "group": "wage",
+      "action": "init",
+      "purpose": "司机工资计算与核对：引导式接入",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "wage",
+        "init"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_summary_generate",
+      "group": "summary",
+      "action": "generate",
+      "purpose": "月度汇总（工资及相关运输数据）：按配置生成月度汇总（先回收旧表）",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "summary",
+        "generate"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_summary_inspect",
+      "group": "summary",
+      "action": "inspect",
+      "purpose": "月度汇总（工资及相关运输数据）：只看识别到的原始数值",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "summary",
+        "inspect"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_sheet_inspect",
+      "group": "sheet",
+      "action": "inspect",
+      "purpose": "月度制表（按模板插入月份 sheet）：核对模板/数据源/目标表结构",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "sheet",
+        "inspect"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_sheet_plan",
+      "group": "sheet",
+      "action": "plan",
+      "purpose": "月度制表（按模板插入月份 sheet）：只解析不写入",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "sheet",
+        "plan"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_sheet_run",
+      "group": "sheet",
+      "action": "run",
+      "purpose": "月度制表（按模板插入月份 sheet）：真正写入（默认 dry-run）",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "sheet",
+        "run"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_sheet_selftest",
+      "group": "sheet",
+      "action": "selftest",
+      "purpose": "月度制表（按模板插入月份 sheet）：脱敏自测",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "sheet",
+        "selftest"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_intake_parse",
+      "group": "intake",
+      "action": "parse",
+      "purpose": "解析运输单文本/附件为结构化明细",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "intake",
+        "parse"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_intake_plan",
+      "group": "intake",
+      "action": "plan",
+      "purpose": "只解析并生成执行计划，不写入",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "intake",
+        "plan"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_intake_run",
+      "group": "intake",
+      "action": "run",
+      "purpose": "生成数据源并按配置调用月度制表写入",
+      "risk": "write",
+      "risk_label": "本地写入",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "intake",
+        "run"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "logistics_intake_selftest",
+      "group": "intake",
+      "action": "selftest",
+      "purpose": "报单脱敏自测，不写真表、不连飞书",
+      "risk": "read",
+      "risk_label": "只读",
+      "command": [
+        "python3",
+        "scripts/logistics.py",
+        "intake",
+        "selftest"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "透传给该 action 的命令行参数，例如 [\"--month\", \"2026-08\"]。"
+          },
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "args 的别名。"
+          },
+          "kwargs": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "键值参数，自动转成 --key value；true 转成单个 --key 开关。"
+          },
+          "max_output_chars": {
+            "type": "integer",
+            "minimum": 1000,
+            "description": "最大返回字符数，默认 50000；超出部分截断并标注。"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+}

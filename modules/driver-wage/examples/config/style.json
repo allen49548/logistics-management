@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "_source_template": "从真实司机工资表抽取并统一后的脱敏规范",
+  "font": {
+    "name": "PingFang SC",
+    "size": 11,
+    "color": "FF000000"
+  },
+  "palette": {
+    "header_bg": "FFFFE699",
+    "header_fg": "FF000000",
+    "data_bg": "FFFFFFFF",
+    "total_bg": "FFFFE699",
+    "title_bg": "FF70AD47",
+    "title_fg": "FFFFFFFF",
+    "border": "FFBFBFBF",
+    "accent_green": "FF70AD47",
+    "accent_orange": "FFED7D31"
+  },
+  "header": {"bold": true, "align": "center", "height": 24},
+  "data": {"align": "center", "height": 20},
+  "total": {"bold": true, "align": "center"},
+  "title": {"bold": true, "align": "center", "fg": "FFFFFFFF"},
+  "number_format": {
+    "money": "¥#,##0.00",
+    "km": "#,##0",
+    "date": "yyyy-mm-dd",
+    "integer": "0"
+  },
+  "columns": {
+    "司机": 12,
+    "月份": 12,
+    "趟数": 9,
+    "公里数": 12,
+    "应发工资": 15,
+    "报销": 13,
+    "扣款": 13,
+    "实发工资": 15,
+    "规则状态": 12,
+    "日期": 14.6,
+    "路线": 45.7,
+    "工资": 14,
+    "来源": 18,
+    "行号": 9
+  },
+  "default_width": 14,
+  "auto_filter": true,
+  "sheet_names": {
+    "summary": "工资汇总",
+    "detail": "工资明细",
+    "payslip": "工资条"
+  },
+  "note": "所有月份、所有司机、所有产出共用这一份规范；如需改成自己定的格式，替换本文件或用 extract-style 从模板 xlsx 重新抽取。"
+}

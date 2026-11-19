@@ -1,0 +1,5 @@
+物流管理系统是自包含 Python 工具包，不是平台专有 skill。
+先运行 `python3 scripts/agent.py list` 发现工具，再用 `python3 scripts/agent.py call <tool>` 调用。
+只读工具可直接调用；本地写入需 LOGISTICS_ALLOW_WRITE=1；飞书外发/远程读取需 LOGISTICS_ALLOW_EXTERNAL=1。
+所有业务写入默认 dry-run 或有人工确认闸门；图片未转录不得猜数；工资 BLOCK 或 confirm 不得由 Agent 绕过。
+飞书 CLI 用 PATH 中的 lark-cli，或环境变量 LOGISTICS_LARK_CLI / LARK_CLI 指定。

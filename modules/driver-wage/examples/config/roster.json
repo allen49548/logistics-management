@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "note": "脱敏示例。真实名册放 config/local/roster.json（已 gitignore）。open_id 为空的司机不会收到私聊，会在 dispatch 报告中列出，绝不猜 open_id、绝不降级群发。",
+  "drivers": [
+    {"id": "D01", "name": "示例司机A", "open_id": "ou_example0000000000000000000001", "notify": true},
+    {"id": "D02", "name": "示例司机B", "open_id": "ou_example0000000000000000000002", "notify": true},
+    {"id": "D03", "name": "示例司机C", "open_id": "", "notify": true},
+    {"id": "D04", "name": "示例司机D", "open_id": "", "notify": true}
+  ]
+}

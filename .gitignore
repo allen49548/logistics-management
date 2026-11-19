@@ -1,0 +1,15 @@
+# 真实配置（含姓名/金额/群ID/open_id）不进仓库
+config/local/
+modules/reimbursement/config.json
+modules/driver-wage/config/local/
+modules/driver-monthly-sheet/config/local/
+# 运行时数据（台账、去重池、日志、备份、凭证、工资条）
+state/
+modules/reimbursement/state/
+modules/reimbursement/lark-im-resources/
+modules/driver-wage/state/
+modules/driver-wage/out/
+# Python
+__pycache__/
+*.py[cod]
+.venv/

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "description": "模块注册表：通用物流工具包自包含四个业务模块；modules.*.skill_root 为兼容字段名，实际指向本工具包内的 modules/ 目录，delegates 里的脚本路径为唯一执行真源。不再依赖外部 skill。",
+  "modules": {
+    "reimbursement": {
+      "title": "司机报销",
+      "skill_root": "modules/reimbursement",
+      "config": "config.json",
+      "flow_doc": "SKILL.md",
+      "delegates": {
+        "sync_roster":   {"script": "scripts/driver_roster.py", "subcommand": "sync",    "purpose": "可选同步司机名册（仅提升归属精度）"},
+        "resolve":       {"script": "scripts/driver_roster.py", "subcommand": "resolve",  "purpose": "逐条解析凭证归属司机"},
+        "dedup_check":   {"script": "scripts/ledger.py",        "subcommand": "check",    "purpose": "四方池六层去重（单条）"},
+        "dedup_batch":   {"script": "scripts/ledger.py",        "subcommand": "check-batch", "purpose": "批量去重"},
+        "ledger_add":    {"script": "scripts/ledger.py",        "subcommand": "add",      "purpose": "入账登记"},
+        "balance":       {"script": "scripts/ledger.py",        "subcommand": "balance",  "purpose": "按司机四态/未结"},
+        "index_add":     {"script": "scripts/ledger.py",        "subcommand": "index-add","purpose": "维护群历史池"},
+        "write_detail":  {"script": "scripts/reimb_detail.py",  "subcommand": "apply",    "purpose": "写入唯一报销明细 sheet"},
+        "group_task":    {"script": "scripts/group_task.py",    "subcommand": "create",   "purpose": "建报销确认任务（闭环必需）"},
+        "notify":        {"script": "scripts/notify.py",        "subcommand": null,       "purpose": "群+负责人两层通报"},
+        "monthly":       {"script": "scripts/monthly_summary.py", "subcommand": null,     "purpose": "月初月报（1-4号）"},
+        "mention_gate":  {"script": "scripts/mention.py",       "subcommand": "gate",     "purpose": "@ 触发群/内容门槛"},
+        "mention_classify": {"script": "scripts/mention.py",    "subcommand": "classify", "purpose": "@ 权限分级"},
+        "mention_ack":   {"script": "scripts/mention.py",       "subcommand": "ack",      "purpose": "先调侃回应再执行"},
+        "bot_check":     {"script": "scripts/bot_check.py",     "subcommand": null,       "purpose": "飞书机器人配置自检"},
+        "driver_copy":   {"script": "scripts/driver_copy.py",   "subcommand": "render",   "purpose": "群内极简文案"}
+      },
+      "trigger": {
+        "modes": ["manual", "at_in_group", "automation_monthly"],
+        "note": "@ 触发的门槛/权限/先回应全部在 reimbursement 的 mention.py；定时任务见其 SKILL.md，本 skill 不新建自动化。"
+      }
+    },
+    "wage": {
+      "title": "司机工资计算与核对",
+      "skill_root": "modules/driver-wage",
+      "config_dir": "config/local",
+      "flow_doc": "SKILL.md",
+      "delegates": {
+        "compute":      {"script": "scripts/payroll.py", "subcommand": "compute",      "purpose": "按规则计算工资"},
+        "verify":       {"script": "scripts/payroll.py", "subcommand": "verify",       "purpose": "独立路径核对（六类核对）"},
+        "preview":      {"script": "scripts/payroll.py", "subcommand": "preview",      "purpose": "定时终点：待确认预览，绝不私发"},
+        "confirm":      {"script": "scripts/payroll.py", "subcommand": "confirm",      "purpose": "发起人确认硬闸门"},
+        "dispatch":     {"script": "scripts/payroll.py", "subcommand": "dispatch",     "purpose": "一人一条私发（默认 dry-run）"},
+        "sync_roster":  {"script": "scripts/payroll.py", "subcommand": "sync-roster",  "purpose": "飞书名册同步（主源）"},
+        "status":       {"script": "scripts/payroll.py", "subcommand": "status",       "purpose": "查状态/确认/回执"},
+        "validate":     {"script": "scripts/payroll.py", "subcommand": "validate",     "purpose": "人话配置校验"},
+        "init":         {"script": "scripts/payroll.py", "subcommand": "init",         "purpose": "引导式接入"}
+      },
+      "trigger": {
+        "modes": ["manual", "automation_monthly_10"],
+        "note": "固定顺序 compute→verify→preview→发起人 confirm→dispatch；BLOCK 即停，Agent 不得代确认。见 wage SKILL.md。"
+      }
+    },
+    "summary": {
+      "title": "月度汇总（工资及相关运输数据）",
+      "skill_root": "modules/driver-month-report",
+      "config": "config/report.json",
+      "flow_doc": "SKILL.md",
+      "delegates": {
+        "generate": {"script": "scripts/cli.py", "subcommand": "generate", "purpose": "按配置生成月度汇总（先回收旧表）"},
+        "inspect":  {"script": "scripts/cli.py", "subcommand": "inspect",  "purpose": "只看识别到的原始数值"}
+      },
+      "trigger": {
+        "modes": ["manual"],
+        "note": "月份参数与环比配置在 report.json；comparison_only_previous 必须只与上一个月比。"
+      }
+    },
+    "monthly_sheet": {
+      "title": "月度制表（按模板插入月份 sheet）",
+      "skill_root": "modules/driver-monthly-sheet",
+      "config": "config/local/config.json",
+      "flow_doc": "SKILL.md",
+      "delegates": {
+        "inspect": {"script": "scripts/driver_sheet.py", "subcommand": "inspect", "purpose": "核对模板/数据源/目标表结构"},
+        "plan":    {"script": "scripts/driver_sheet.py", "subcommand": "plan",    "purpose": "只解析不写入"},
+        "run":     {"script": "scripts/driver_sheet.py", "subcommand": "run",     "purpose": "真正写入（默认 dry-run）"},
+        "selftest":{"script": "scripts/driver_sheet.py", "subcommand": "selftest","purpose": "脱敏自测"}
+      },
+      "trigger": {
+        "modes": ["manual", "from_intake"],
+        "note": "被『报单』模块复用：intake 产出的标准数据源以 --source 传入 run。"
+      }
+    }
+  }
+}
